@@ -1,5 +1,13 @@
 import express from 'express';
 import axios from 'axios';
+import {
+  createSession,
+  getSession,
+  updateSession,
+  deleteSession,
+  needsRefresh,
+  sessionMiddleware
+} from '../middleware/session.js';
 
 const router = express.Router();
 
@@ -13,6 +21,9 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 // Market configuration for Swedish banks
 const MARKET = 'SE';
 const LOCALE = 'sv_SE';
+
+// Apply session middleware to all routes
+router.use(sessionMiddleware);
 
 /**
  * GET /api/tink/connect
@@ -102,7 +113,7 @@ router.get('/connect', async (req, res) => {
 /**
  * GET /api/tink/callback
  * Handles the authorization code callback from Tink
- * Exchanges the code for an access_token
+ * Exchanges the code for an access_token and stores in session
  */
 router.get('/callback', async (req, res) => {
   try {
@@ -134,18 +145,17 @@ router.get('/callback', async (req, res) => {
       }
     );
 
-    const { access_token, refresh_token, expires_in, scope } = tokenResponse.data;
+    const tokens = tokenResponse.data;
 
-    // In production, store these tokens securely associated with the user
-    // using server-side session storage (e.g., encrypted cookies, Redis, database)
-    // WARNING: Never pass tokens in URL in production - use secure session storage
+    // Create session and store tokens securely server-side
+    const sessionId = createSession(tokens, credentialsId);
     
-    // For demo purposes, we redirect with just a success flag
-    // In production, set a secure HTTP-only session cookie with the token
+    // Set session cookie
+    req.setSessionCookie(sessionId);
 
     console.log('Successfully authenticated with Tink');
     console.log('Credentials ID:', credentialsId);
-    console.log('Scopes:', scope);
+    console.log('Session created:', sessionId);
 
     // Redirect to frontend with success indicator only (no sensitive data in URL)
     res.redirect(`${FRONTEND_URL}?connected=true`);
@@ -159,19 +169,35 @@ router.get('/callback', async (req, res) => {
 /**
  * GET /api/transactions
  * Fetches live transaction data from Tink
- * Requires valid access token (would be stored from callback)
+ * Uses session-stored access token
  */
 router.get('/transactions', async (req, res) => {
   try {
-    // In production, retrieve the stored access token for the authenticated user
-    const accessToken = req.headers.authorization?.replace('Bearer ', '');
-
-    if (!accessToken) {
+    // Get access token from session
+    if (!req.session || !req.session.accessToken) {
       return res.status(401).json({
         error: 'Unauthorized',
-        message: 'Access token required. Connect your bank first.'
+        message: 'Please connect your bank first.',
+        connected: false
       });
     }
+
+    // Check if token needs refresh
+    if (needsRefresh(req.sessionId)) {
+      try {
+        await refreshTokens(req.sessionId, req.session.refreshToken);
+      } catch (refreshError) {
+        console.error('Token refresh failed:', refreshError.response?.data || refreshError.message);
+        return res.status(401).json({
+          error: 'Session expired',
+          message: 'Please re-authenticate with your bank',
+          details: refreshError.response?.data?.errorMessage || refreshError.message,
+          connected: false
+        });
+      }
+    }
+
+    const accessToken = req.session.accessToken;
 
     // Fetch accounts first to get account IDs
     const accountsResponse = await axios.get(
@@ -222,6 +248,7 @@ router.get('/transactions', async (req, res) => {
     }));
 
     res.json({
+      connected: true,
       accounts: accounts.map(a => ({
         id: a.id,
         name: a.name,
@@ -242,13 +269,15 @@ router.get('/transactions', async (req, res) => {
     if (error.response?.status === 401) {
       return res.status(401).json({
         error: 'Token expired',
-        message: 'Please re-authenticate with your bank'
+        message: 'Please re-authenticate with your bank',
+        connected: false
       });
     }
 
     res.status(500).json({
       error: 'Failed to fetch transactions',
-      details: error.response?.data?.errorMessage || error.message
+      details: error.response?.data?.errorMessage || error.message,
+      connected: true
     });
   }
 });
@@ -256,17 +285,20 @@ router.get('/transactions', async (req, res) => {
 /**
  * GET /api/tink/status
  * Returns the connection status for the user's linked banks
+ * Uses session-stored access token
  */
 router.get('/status', async (req, res) => {
   try {
-    const accessToken = req.headers.authorization?.replace('Bearer ', '');
-
-    if (!accessToken) {
+    // Check if user has a valid session
+    if (!req.session || !req.session.accessToken) {
       return res.json({
         connected: false,
-        banks: []
+        banks: [],
+        message: 'No active session'
       });
     }
+
+    const accessToken = req.session.accessToken;
 
     // Fetch credentials to check connection status
     const credentialsResponse = await axios.get(
@@ -293,11 +325,22 @@ router.get('/status', async (req, res) => {
 
     res.json({
       connected: banks.length > 0,
-      banks
+      banks,
+      sessionExpiresAt: req.session.expiresAt,
+      lastSynced: new Date().toISOString()
     });
 
   } catch (error) {
     console.error('Tink status error:', error.response?.data || error.message);
+    
+    if (error.response?.status === 401) {
+      return res.json({
+        connected: false,
+        banks: [],
+        error: 'Session expired - please reconnect'
+      });
+    }
+    
     res.json({
       connected: false,
       banks: [],
@@ -305,6 +348,82 @@ router.get('/status', async (req, res) => {
     });
   }
 });
+
+/**
+ * POST /api/tink/refresh
+ * Refresh access token before expiry
+ */
+router.post('/refresh', async (req, res) => {
+  try {
+    if (!req.session || !req.session.refreshToken) {
+      return res.status(401).json({
+        error: 'No session to refresh',
+        connected: false
+      });
+    }
+
+    await refreshTokens(req.sessionId, req.session.refreshToken);
+
+    res.json({
+      success: true,
+      message: 'Session refreshed successfully'
+    });
+
+  } catch (error) {
+    console.error('Token refresh error:', error.response?.data || error.message);
+    res.status(401).json({
+      error: 'Failed to refresh session',
+      message: 'Please re-authenticate with your bank'
+    });
+  }
+});
+
+/**
+ * POST /api/tink/disconnect
+ * Disconnect bank and clear session
+ */
+router.post('/disconnect', async (req, res) => {
+  try {
+    if (req.sessionId) {
+      deleteSession(req.sessionId);
+      req.clearSessionCookie();
+    }
+
+    res.json({
+      success: true,
+      message: 'Disconnected successfully'
+    });
+
+  } catch (error) {
+    console.error('Disconnect error:', error.message);
+    res.status(500).json({
+      error: 'Failed to disconnect'
+    });
+  }
+});
+
+/**
+ * Helper: Refresh access token using refresh token
+ */
+async function refreshTokens(sessionId, refreshToken) {
+  const tokenResponse = await axios.post(
+    `${TINK_API_URL}/api/v1/oauth/token`,
+    new URLSearchParams({
+      client_id: TINK_CLIENT_ID,
+      client_secret: TINK_CLIENT_SECRET,
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken
+    }),
+    {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    }
+  );
+
+  updateSession(sessionId, tokenResponse.data);
+  return tokenResponse.data;
+}
 
 /**
  * Helper: Determine bank source from account ID

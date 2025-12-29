@@ -1,20 +1,129 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import nordeaTransactions from '../data/nordeaTransactions.json';
 import norwegianTransactions from '../data/norwegianTransactions.json';
 import { fuzzyMatchMerchant } from '../utils/bankNormalizer';
+
+// API Configuration
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 /**
  * useFinancialData - Custom hook for Swedish banking analytics
  * 
  * Provides:
- * - Merged transaction data from Nordea and Bank Norwegian
+ * - Merged transaction data from Nordea and Bank Norwegian (live or mock)
  * - Subscription detection (recurring monthly amounts with fuzzy matching)
  * - Point maximizer logic (lost CashPoints for Travel on wrong card)
  * - Fika Index (total spend on small purchases < 60 SEK)
  */
 const useFinancialData = () => {
+  // State for live data
+  const [liveTransactions, setLiveTransactions] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [lastFetched, setLastFetched] = useState(null);
+
+  /**
+   * Fetch transactions from API
+   */
+  const fetchTransactions = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const response = await fetch(`${API_URL}/api/tink/transactions`, {
+        credentials: 'include' // Include cookies for session
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.connected) {
+        setLiveTransactions(data.transactions);
+        setIsConnected(true);
+        setLastFetched(new Date().toISOString());
+        return data.transactions;
+      } else {
+        // Not connected or error - will use mock data
+        setIsConnected(false);
+        setLiveTransactions(null);
+        if (data.error) {
+          setError(data.message || data.error);
+        }
+        return null;
+      }
+    } catch (err) {
+      console.error('Failed to fetch transactions:', err);
+      setError('Unable to fetch live data');
+      setIsConnected(false);
+      setLiveTransactions(null);
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  /**
+   * Check connection status
+   */
+  const checkConnectionStatus = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/tink/status`, {
+        credentials: 'include'
+      });
+      const data = await response.json();
+      
+      if (data.connected) {
+        setIsConnected(true);
+        // If connected, fetch transactions
+        await fetchTransactions();
+      } else {
+        setIsConnected(false);
+        setLiveTransactions(null);
+      }
+      
+      return data;
+    } catch (err) {
+      console.error('Failed to check connection status:', err);
+      setIsConnected(false);
+      return { connected: false };
+    }
+  }, [fetchTransactions]);
+
+  /**
+   * Refresh data manually
+   */
+  const refreshData = useCallback(async () => {
+    await fetchTransactions();
+  }, [fetchTransactions]);
+
+  // Check connection status on mount only
+  useEffect(() => {
+    checkConnectionStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only once on mount
+
+  // Auto-refresh every 5 minutes when connected
+  useEffect(() => {
+    if (!isConnected) return;
+
+    const interval = setInterval(() => {
+      fetchTransactions();
+    }, 5 * 60 * 1000); // 5 minutes
+
+    return () => clearInterval(interval);
+  }, [isConnected, fetchTransactions]);
+
+  // Use live data if available, otherwise mock data
   // Add source tag to each transaction and merge datasets
   const mergedTransactions = useMemo(() => {
+    if (liveTransactions && liveTransactions.length > 0) {
+      // Live data already has source from API
+      return liveTransactions.sort(
+        (a, b) => new Date(a.date) - new Date(b.date)
+      );
+    }
+
+    // Fallback to mock data
     const nordea = nordeaTransactions.map(t => ({
       ...t,
       source: 'nordea'
@@ -28,7 +137,7 @@ const useFinancialData = () => {
     return [...nordea, ...norwegian].sort(
       (a, b) => new Date(a.date) - new Date(b.date)
     );
-  }, []);
+  }, [liveTransactions]);
 
   /**
    * Subscription Detection Logic with Fuzzy Matching
@@ -184,7 +293,18 @@ const useFinancialData = () => {
     // Fika data
     totalFikaSpend,
     fikaCount,
-    bunEquivalent
+    bunEquivalent,
+
+    // Connection state
+    isConnected,
+    isLoading,
+    error,
+    lastFetched,
+    usingMockData: !liveTransactions,
+
+    // Actions
+    refreshData,
+    checkConnectionStatus
   };
 };
 

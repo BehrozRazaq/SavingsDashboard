@@ -1,11 +1,12 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { 
   Link2, 
   CheckCircle, 
   AlertTriangle, 
   RefreshCw,
-  ExternalLink
+  ExternalLink,
+  Clock,
+  Unlink
 } from 'lucide-react';
 import Card from './Card';
 
@@ -35,6 +36,13 @@ const BankStatus = ({ name, status, onReauth }) => {
       borderColor: 'border-primary-500/30',
       label: 'Syncing',
     },
+    awaiting_bankid: {
+      icon: RefreshCw,
+      color: 'text-primary-400',
+      bgColor: 'bg-primary-500/10',
+      borderColor: 'border-primary-500/30',
+      label: 'Waiting for BankID',
+    },
     error: {
       icon: AlertTriangle,
       color: 'text-red-400',
@@ -62,7 +70,7 @@ const BankStatus = ({ name, status, onReauth }) => {
       <div className="flex items-center gap-3">
         <Icon 
           size={16} 
-          className={`${config.color} ${status === 'syncing' ? 'animate-spin' : ''}`} 
+          className={`${config.color} ${(status === 'syncing' || status === 'awaiting_bankid') ? 'animate-spin' : ''}`} 
         />
         <span className="text-sm text-slate-100 font-medium">{name}</span>
       </div>
@@ -91,7 +99,9 @@ const ConnectionStatus = ({
   banks = [], 
   isLoading = false, 
   onConnect = () => {},
-  onReauth = () => {}
+  onReauth = () => {},
+  onDisconnect = () => {},
+  lastSynced = null
 }) => {
   // Default bank configurations for Swedish market
   const defaultBanks = [
@@ -120,6 +130,20 @@ const ConnectionStatus = ({
 
   const connectedCount = displayBanks.filter(b => b.status === 'connected').length;
   const hasExpired = displayBanks.some(b => b.status === 'expired' || b.status === 'error');
+  const isAnyConnected = connectedCount > 0;
+
+  // Format last synced time
+  const formatLastSynced = (timestamp) => {
+    if (!timestamp) return null;
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diff = now - date;
+    
+    if (diff < 60000) return 'Just now';
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+    return date.toLocaleDateString('sv-SE');
+  };
 
   return (
     <Card title="Bank Connections" icon={Link2}>
@@ -136,6 +160,14 @@ const ConnectionStatus = ({
             </span>
           )}
         </div>
+
+        {/* Last Synced */}
+        {lastSynced && isAnyConnected && (
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            <Clock size={12} />
+            <span>Last synced: {formatLastSynced(lastSynced)}</span>
+          </div>
+        )}
 
         {/* Bank List */}
         <div className="space-y-2">
@@ -156,15 +188,35 @@ const ConnectionStatus = ({
           )}
         </div>
 
-        {/* Connect Button */}
-        <button
-          onClick={onConnect}
-          className="w-full btn btn-primary"
-        >
-          <Link2 size={16} />
-          <span>Connect Bank</span>
-          <ExternalLink size={14} className="opacity-60" />
-        </button>
+        {/* Connect/Disconnect Buttons */}
+        {isAnyConnected ? (
+          <div className="space-y-2">
+            <button
+              onClick={onConnect}
+              className="w-full btn btn-primary"
+            >
+              <Link2 size={16} />
+              <span>Add Another Bank</span>
+              <ExternalLink size={14} className="opacity-60" />
+            </button>
+            <button
+              onClick={onDisconnect}
+              className="w-full btn btn-secondary flex items-center justify-center gap-2 text-slate-400 hover:text-red-400"
+            >
+              <Unlink size={16} />
+              <span>Disconnect All</span>
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={onConnect}
+            className="w-full btn btn-primary"
+          >
+            <Link2 size={16} />
+            <span>Connect Bank</span>
+            <ExternalLink size={14} className="opacity-60" />
+          </button>
+        )}
 
         {/* Info Text */}
         <p className="text-xs text-slate-500 text-center">

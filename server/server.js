@@ -1,13 +1,19 @@
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import 'dotenv/config';
 import authRoutes from './routes/auth.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: FRONTEND_URL,
+  credentials: true // Allow cookies to be sent
+}));
+app.use(cookieParser());
 app.use(express.json());
 
 // Mount Tink authentication routes
