@@ -1,13 +1,14 @@
 import { useMemo } from 'react';
 import nordeaTransactions from '../data/nordeaTransactions.json';
 import norwegianTransactions from '../data/norwegianTransactions.json';
+import { fuzzyMatchMerchant } from '../utils/bankNormalizer';
 
 /**
  * useFinancialData - Custom hook for Swedish banking analytics
  * 
  * Provides:
  * - Merged transaction data from Nordea and Bank Norwegian
- * - Subscription detection (recurring monthly amounts with < 1% variance)
+ * - Subscription detection (recurring monthly amounts with fuzzy matching)
  * - Point maximizer logic (lost CashPoints for Travel on wrong card)
  * - Fika Index (total spend on small purchases < 60 SEK)
  */
@@ -30,22 +31,33 @@ const useFinancialData = () => {
   }, []);
 
   /**
-   * Subscription Detection Logic
-   * Identifies recurring amounts (variance < 1%) that appear monthly
-   * Returns a list of detected subscriptions with merchant and amount
+   * Subscription Detection Logic with Fuzzy Matching
+   * Groups similar merchant names (e.g., "Netflix" and "NETFLIX.COM")
+   * Identifies recurring amounts with +/- 2 SEK tolerance that appear monthly
    */
   const subscriptions = useMemo(() => {
-    // Group transactions by merchant
+    // Group transactions by merchant with fuzzy matching
     const merchantGroups = {};
     
     mergedTransactions.forEach(t => {
       if (t.amount < 0) { // Only consider expenses
-        if (!merchantGroups[t.merchant]) {
-          merchantGroups[t.merchant] = [];
+        // Find existing group that fuzzy matches this merchant
+        let foundGroup = null;
+        for (const groupName of Object.keys(merchantGroups)) {
+          if (fuzzyMatchMerchant(t.merchant, groupName)) {
+            foundGroup = groupName;
+            break;
+          }
         }
-        merchantGroups[t.merchant].push({
+        
+        const groupName = foundGroup || t.merchant;
+        if (!merchantGroups[groupName]) {
+          merchantGroups[groupName] = [];
+        }
+        merchantGroups[groupName].push({
           amount: Math.abs(t.amount),
-          date: t.date
+          date: t.date,
+          merchant: t.merchant // Keep original name for reference
         });
       }
     });
@@ -61,10 +73,10 @@ const useFinancialData = () => {
         // Skip if average amount is zero to avoid division by zero
         if (avgAmount === 0) return;
         
-        // Check if all amounts are within 1% variance of average
+        // Check if all amounts are within +/- 2 SEK tolerance (fuzzy amount matching)
         const isRecurring = amounts.every(amount => {
-          const variance = Math.abs(amount - avgAmount) / avgAmount;
-          return variance < 0.01;
+          const difference = Math.abs(amount - avgAmount);
+          return difference <= 2; // 2 SEK tolerance
         });
         
         // Check if transactions are roughly monthly (25-35 days apart)
@@ -89,7 +101,9 @@ const useFinancialData = () => {
           detectedSubscriptions.push({
             merchant,
             amount: Math.round(avgAmount),
-            occurrences: transactions.length
+            occurrences: transactions.length,
+            // Include all matched merchant names for transparency
+            matchedNames: [...new Set(transactions.map(t => t.merchant))]
           });
         }
       }

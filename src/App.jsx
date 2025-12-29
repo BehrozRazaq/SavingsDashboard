@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, Github, Zap, BarChart3 } from 'lucide-react';
 
@@ -10,15 +10,26 @@ import InflationAdjuster from './components/InflationAdjuster';
 import SubscriptionSlayer from './components/SubscriptionSlayer';
 import PointsLost from './components/PointsLost';
 import FikaVisualizer from './components/FikaVisualizer';
+import ConnectionStatus from './components/ConnectionStatus';
 
 // Import custom hook
 import useFinancialData from './hooks/useFinancialData';
+
+// API Configuration
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 /**
  * FluxFinance - Personal Finance Dashboard
  * A cyberpunk-styled financial utility suite
  */
 function App() {
+  // Bank connection state
+  const [bankConnections, setBankConnections] = useState([
+    { id: 'nordea', name: 'Nordea', status: 'disconnected' },
+    { id: 'norwegian', name: 'Bank Norwegian', status: 'disconnected' }
+  ]);
+  const [isLoadingConnections, setIsLoadingConnections] = useState(false);
+
   // Get financial data from custom hook
   const {
     subscriptions,
@@ -29,6 +40,39 @@ function App() {
     fikaCount,
     bunEquivalent
   } = useFinancialData();
+
+  /**
+   * Handle bank connection via Tink API
+   */
+  const handleConnectBank = useCallback(async () => {
+    try {
+      setIsLoadingConnections(true);
+      const response = await fetch(`${API_URL}/api/tink/connect`);
+      const data = await response.json();
+      
+      if (data.url) {
+        // Redirect to Tink Link for BankID authentication
+        window.location.href = data.url;
+      } else {
+        console.error('Failed to get Tink Link URL:', data.error);
+        alert('Unable to connect to bank. Please try again later.');
+      }
+    } catch (error) {
+      console.error('Bank connection error:', error);
+      alert('Unable to connect to bank service. Please check your internet connection.');
+    } finally {
+      setIsLoadingConnections(false);
+    }
+  }, []);
+
+  /**
+   * Handle bank re-authentication
+   */
+  const handleReauth = useCallback(async (bank) => {
+    console.log('Re-authenticating bank:', bank.name);
+    // Trigger the same connect flow for re-authentication
+    await handleConnectBank();
+  }, [handleConnectBank]);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -143,8 +187,18 @@ function App() {
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
           >
+            {/* Bank Connections */}
+            <motion.div variants={itemVariants}>
+              <ConnectionStatus
+                banks={bankConnections}
+                isLoading={isLoadingConnections}
+                onConnect={handleConnectBank}
+                onReauth={handleReauth}
+              />
+            </motion.div>
+
             {/* Subscription Slayer */}
             <motion.div variants={itemVariants}>
               <SubscriptionSlayer 

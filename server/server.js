@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import 'dotenv/config';
+import authRoutes from './routes/auth.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -7,6 +9,9 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Mount Tink authentication routes
+app.use('/api/tink', authRoutes);
 
 // API Status endpoint
 app.get('/api/status', (req, res) => {
@@ -17,6 +22,10 @@ app.get('/api/status', (req, res) => {
     timestamp: new Date().toISOString(),
     endpoints: [
       'GET /api/status',
+      'GET /api/tink/connect',
+      'GET /api/tink/callback',
+      'GET /api/tink/status',
+      'GET /api/transactions',
       'POST /api/calculate/fire',
       'POST /api/calculate/runway',
       'POST /api/calculate/compound',
