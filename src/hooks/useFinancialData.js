@@ -1,0 +1,177 @@
+import { useMemo } from 'react';
+import nordeaTransactions from '../data/nordeaTransactions.json';
+import norwegianTransactions from '../data/norwegianTransactions.json';
+
+/**
+ * useFinancialData - Custom hook for Swedish banking analytics
+ * 
+ * Provides:
+ * - Merged transaction data from Nordea and Bank Norwegian
+ * - Subscription detection (recurring monthly amounts with < 1% variance)
+ * - Point maximizer logic (lost CashPoints for Travel on wrong card)
+ * - Fika Index (total spend on small purchases < 60 SEK)
+ */
+const useFinancialData = () => {
+  // Add source tag to each transaction and merge datasets
+  const mergedTransactions = useMemo(() => {
+    const nordea = nordeaTransactions.map(t => ({
+      ...t,
+      source: 'nordea'
+    }));
+    
+    const norwegian = norwegianTransactions.map(t => ({
+      ...t,
+      source: 'norwegian'
+    }));
+    
+    return [...nordea, ...norwegian].sort(
+      (a, b) => new Date(a.date) - new Date(b.date)
+    );
+  }, []);
+
+  /**
+   * Subscription Detection Logic
+   * Identifies recurring amounts (variance < 1%) that appear monthly
+   * Returns a list of detected subscriptions with merchant and amount
+   */
+  const subscriptions = useMemo(() => {
+    // Group transactions by merchant
+    const merchantGroups = {};
+    
+    mergedTransactions.forEach(t => {
+      if (t.amount < 0) { // Only consider expenses
+        if (!merchantGroups[t.merchant]) {
+          merchantGroups[t.merchant] = [];
+        }
+        merchantGroups[t.merchant].push({
+          amount: Math.abs(t.amount),
+          date: t.date
+        });
+      }
+    });
+
+    const detectedSubscriptions = [];
+    
+    Object.entries(merchantGroups).forEach(([merchant, transactions]) => {
+      // Need at least 2 occurrences to be considered recurring
+      if (transactions.length >= 2) {
+        const amounts = transactions.map(t => t.amount);
+        const avgAmount = amounts.reduce((a, b) => a + b, 0) / amounts.length;
+        
+        // Skip if average amount is zero to avoid division by zero
+        if (avgAmount === 0) return;
+        
+        // Check if all amounts are within 1% variance of average
+        const isRecurring = amounts.every(amount => {
+          const variance = Math.abs(amount - avgAmount) / avgAmount;
+          return variance < 0.01;
+        });
+        
+        // Check if transactions are roughly monthly (25-35 days apart)
+        let isMonthly = false;
+        if (transactions.length >= 2) {
+          const sortedDates = transactions.map(t => new Date(t.date)).sort((a, b) => a - b);
+          const daysBetween = [];
+          
+          for (let i = 1; i < sortedDates.length; i++) {
+            const diff = (sortedDates[i] - sortedDates[i-1]) / (1000 * 60 * 60 * 24);
+            daysBetween.push(diff);
+          }
+          
+          // Consider monthly if average gap is between 25-35 days
+          if (daysBetween.length > 0) {
+            const avgDays = daysBetween.reduce((a, b) => a + b, 0) / daysBetween.length;
+            isMonthly = avgDays >= 25 && avgDays <= 35;
+          }
+        }
+        
+        if (isRecurring && isMonthly) {
+          detectedSubscriptions.push({
+            merchant,
+            amount: Math.round(avgAmount),
+            occurrences: transactions.length
+          });
+        }
+      }
+    });
+    
+    return detectedSubscriptions;
+  }, [mergedTransactions]);
+
+  // Total monthly subscription cost
+  const totalSubscriptionCost = useMemo(() => {
+    return subscriptions.reduce((total, sub) => total + sub.amount, 0);
+  }, [subscriptions]);
+
+  /**
+   * Point Maximizer Logic
+   * Calculates lost points when Travel category spent on Nordea instead of Norwegian
+   * Norwegian offers 1 CashPoint per 10 SEK on Travel
+   */
+  const lostPoints = useMemo(() => {
+    const travelOnNordea = mergedTransactions.filter(
+      t => t.source === 'nordea' && t.category === 'Travel' && t.amount < 0
+    );
+    
+    const totalTravelSpend = travelOnNordea.reduce(
+      (sum, t) => sum + Math.abs(t.amount), 0
+    );
+    
+    // 1 CashPoint per 10 SEK
+    return Math.floor(totalTravelSpend / 10);
+  }, [mergedTransactions]);
+
+  // Travel transactions made on wrong card (Nordea instead of Norwegian)
+  const missedTravelTransactions = useMemo(() => {
+    return mergedTransactions.filter(
+      t => t.source === 'nordea' && t.category === 'Travel' && t.amount < 0
+    );
+  }, [mergedTransactions]);
+
+  /**
+   * Fika Index Logic
+   * Sums all transactions under 60 SEK (typical fika purchase)
+   * Returns total fika spend
+   */
+  const totalFikaSpend = useMemo(() => {
+    const fikaTransactions = mergedTransactions.filter(
+      t => t.amount < 0 && Math.abs(t.amount) < 60
+    );
+    
+    return fikaTransactions.reduce(
+      (sum, t) => sum + Math.abs(t.amount), 0
+    );
+  }, [mergedTransactions]);
+
+  // Number of fika purchases
+  const fikaCount = useMemo(() => {
+    return mergedTransactions.filter(
+      t => t.amount < 0 && Math.abs(t.amount) < 60
+    ).length;
+  }, [mergedTransactions]);
+
+  // Bun equivalent (cost of a typical Swedish bun is 25 SEK)
+  const bunEquivalent = useMemo(() => {
+    return Math.floor(totalFikaSpend / 25);
+  }, [totalFikaSpend]);
+
+  return {
+    // Raw data
+    mergedTransactions,
+    
+    // Subscription data
+    subscriptions,
+    totalSubscriptionCost,
+    
+    // Points data
+    lostPoints,
+    missedTravelTransactions,
+    
+    // Fika data
+    totalFikaSpend,
+    fikaCount,
+    bunEquivalent
+  };
+};
+
+export default useFinancialData;

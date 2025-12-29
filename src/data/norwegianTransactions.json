@@ -1,0 +1,142 @@
+[
+  {
+    "id": "norwegian-001",
+    "date": "2024-09-28",
+    "merchant": "Norwegian Air",
+    "amount": -3450,
+    "category": "Travel"
+  },
+  {
+    "id": "norwegian-002",
+    "date": "2024-10-02",
+    "merchant": "Elgiganten",
+    "amount": -4999,
+    "category": "Electronics"
+  },
+  {
+    "id": "norwegian-003",
+    "date": "2024-10-05",
+    "merchant": "Restaurang Riche",
+    "amount": -890,
+    "category": "Dining"
+  },
+  {
+    "id": "norwegian-004",
+    "date": "2024-10-09",
+    "merchant": "SAS Scandinavian",
+    "amount": -2875,
+    "category": "Travel"
+  },
+  {
+    "id": "norwegian-005",
+    "date": "2024-10-12",
+    "merchant": "MediaMarkt",
+    "amount": -2199,
+    "category": "Electronics"
+  },
+  {
+    "id": "norwegian-006",
+    "date": "2024-10-15",
+    "merchant": "Stockholms Fisk",
+    "amount": -645,
+    "category": "Dining"
+  },
+  {
+    "id": "norwegian-007",
+    "date": "2024-10-18",
+    "merchant": "Booking.com Hotel",
+    "amount": -1890,
+    "category": "Travel"
+  },
+  {
+    "id": "norwegian-008",
+    "date": "2024-10-22",
+    "merchant": "Power Electronics",
+    "amount": -799,
+    "category": "Electronics"
+  },
+  {
+    "id": "norwegian-009",
+    "date": "2024-10-25",
+    "merchant": "Oaxen Krog",
+    "amount": -1250,
+    "category": "Dining"
+  },
+  {
+    "id": "norwegian-010",
+    "date": "2024-10-28",
+    "merchant": "Finnair",
+    "amount": -2345,
+    "category": "Travel"
+  },
+  {
+    "id": "norwegian-011",
+    "date": "2024-11-01",
+    "merchant": "Kjell & Company",
+    "amount": -549,
+    "category": "Electronics"
+  },
+  {
+    "id": "norwegian-012",
+    "date": "2024-11-04",
+    "merchant": "Frantzén",
+    "amount": -3500,
+    "category": "Dining"
+  },
+  {
+    "id": "norwegian-013",
+    "date": "2024-11-07",
+    "merchant": "Norwegian Air",
+    "amount": -1980,
+    "category": "Travel"
+  },
+  {
+    "id": "norwegian-014",
+    "date": "2024-11-10",
+    "merchant": "Elgiganten",
+    "amount": -1299,
+    "category": "Electronics"
+  },
+  {
+    "id": "norwegian-015",
+    "date": "2024-11-12",
+    "merchant": "Sturehof",
+    "amount": -780,
+    "category": "Dining"
+  },
+  {
+    "id": "norwegian-016",
+    "date": "2024-11-15",
+    "merchant": "Wasa Express",
+    "amount": -985,
+    "category": "Travel"
+  },
+  {
+    "id": "norwegian-017",
+    "date": "2024-11-17",
+    "merchant": "Webhallen",
+    "amount": -3299,
+    "category": "Electronics"
+  },
+  {
+    "id": "norwegian-018",
+    "date": "2024-11-19",
+    "merchant": "Gondolen",
+    "amount": -695,
+    "category": "Dining"
+  },
+  {
+    "id": "norwegian-019",
+    "date": "2024-11-21",
+    "merchant": "Arlanda Express",
+    "amount": -299,
+    "category": "Travel"
+  },
+  {
+    "id": "norwegian-020",
+    "date": "2024-11-23",
+    "merchant": "Inet AB",
+    "amount": -1849,
+    "category": "Electronics"
+  }
+]

@@ -1,18 +1,35 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, Github, Zap } from 'lucide-react';
+import { Sparkles, Github, Zap, BarChart3 } from 'lucide-react';
 
 // Import components
 import FireCalculator from './components/FireCalculator';
 import RunwayCalculator from './components/RunwayCalculator';
 import CompoundChart from './components/CompoundChart';
 import InflationAdjuster from './components/InflationAdjuster';
+import SubscriptionSlayer from './components/SubscriptionSlayer';
+import PointsLost from './components/PointsLost';
+import FikaVisualizer from './components/FikaVisualizer';
+
+// Import custom hook
+import useFinancialData from './hooks/useFinancialData';
 
 /**
  * FluxFinance - Personal Finance Dashboard
  * A cyberpunk-styled financial utility suite
  */
 function App() {
+  // Get financial data from custom hook
+  const {
+    subscriptions,
+    totalSubscriptionCost,
+    lostPoints,
+    missedTravelTransactions,
+    totalFikaSpend,
+    fikaCount,
+    bunEquivalent
+  } = useFinancialData();
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -100,6 +117,60 @@ function App() {
             <CompoundChart />
           </motion.div>
         </motion.main>
+
+        {/* Smart Analytics Section */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="mt-12"
+        >
+          {/* Section Header */}
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 rounded-lg bg-gradient-to-br from-pink-500/20 to-violet-500/20 border border-pink-500/30">
+              <BarChart3 className="text-pink-400" size={20} />
+            </div>
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
+              Smart Analytics
+            </h2>
+            <span className="ml-2 px-2 py-0.5 rounded text-xs font-medium bg-pink-500/10 text-pink-400 border border-pink-500/20">
+              Swedish Banking
+            </span>
+          </div>
+
+          {/* Analytics Grid */}
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          >
+            {/* Subscription Slayer */}
+            <motion.div variants={itemVariants}>
+              <SubscriptionSlayer 
+                subscriptions={subscriptions} 
+                totalCost={totalSubscriptionCost} 
+              />
+            </motion.div>
+
+            {/* Points Lost */}
+            <motion.div variants={itemVariants}>
+              <PointsLost 
+                lostPoints={lostPoints} 
+                missedTransactions={missedTravelTransactions} 
+              />
+            </motion.div>
+
+            {/* Fika Visualizer */}
+            <motion.div variants={itemVariants}>
+              <FikaVisualizer 
+                totalFikaSpend={totalFikaSpend} 
+                bunEquivalent={bunEquivalent}
+                fikaCount={fikaCount}
+              />
+            </motion.div>
+          </motion.div>
+        </motion.section>
 
         {/* Footer */}
         <motion.footer
