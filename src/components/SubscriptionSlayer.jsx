@@ -5,8 +5,6 @@ import Card from './Card';
 
 /**
  * Format currency as SEK using Swedish locale
- * @param {number} value - Amount to format
- * @returns {string} Formatted currency string (e.g., "1 250 kr")
  */
 const formatSEK = (value) => {
   return new Intl.NumberFormat('sv-SE', {
@@ -20,70 +18,41 @@ const formatSEK = (value) => {
 /**
  * SubscriptionSlayer Component
  * Lists detected recurring subscriptions with total monthly cost
- * 
- * @param {Object} props
- * @param {Array} props.subscriptions - Array of subscription objects with merchant, amount, occurrences
- * @param {number} props.totalCost - Total monthly subscription cost
  */
 const SubscriptionSlayer = ({ subscriptions = [], totalCost = 0 }) => {
-  const listVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, x: -20 },
-    visible: { opacity: 1, x: 0 }
-  };
-
   return (
-    <Card title="Subscription Slayer" icon={Repeat} accentColor="pink">
+    <Card title="Subscriptions" icon={Repeat}>
       <div className="space-y-4">
         {/* Total Monthly Cost Header */}
-        <div className="p-4 rounded-lg bg-slate-900/50 border border-pink-500/20">
+        <div className="p-4 rounded-md bg-slate-800/50">
           <p className="text-xs text-slate-500 mb-1">Total Monthly Cost</p>
-          <motion.p
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="text-2xl font-bold bg-gradient-to-r from-pink-400 to-rose-400 bg-clip-text text-transparent font-mono"
-          >
+          <p className="text-2xl font-bold text-amber-400 font-mono">
             {formatSEK(totalCost)}
-          </motion.p>
+          </p>
         </div>
 
         {/* Subscription List */}
         {subscriptions.length > 0 ? (
-          <motion.ul
-            variants={listVariants}
-            initial="hidden"
-            animate="visible"
-            className="space-y-2 max-h-48 overflow-y-auto"
-          >
+          <ul className="space-y-2 max-h-48 overflow-y-auto">
             {subscriptions.map((sub) => (
-              <motion.li
+              <li
                 key={sub.merchant}
-                variants={itemVariants}
-                className="flex items-center justify-between p-3 rounded-lg bg-slate-900/30 border border-slate-700/50 hover:border-pink-500/30 transition-colors"
+                className="flex items-center justify-between p-3 rounded-md bg-slate-800/50 hover:bg-slate-800 transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-pink-400" />
-                  <span className="text-sm text-slate-300 truncate max-w-[150px]">
+                  <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                  <span className="text-sm text-slate-300 truncate max-w-[140px]">
                     {sub.merchant}
                   </span>
                 </div>
-                <span className="text-sm font-mono text-pink-400">
+                <span className="text-sm font-mono text-slate-400">
                   {formatSEK(sub.amount)}
                 </span>
-              </motion.li>
+              </li>
             ))}
-          </motion.ul>
+          </ul>
         ) : (
-          <div className="flex items-center gap-2 p-4 rounded-lg bg-slate-900/30 text-slate-500">
+          <div className="flex items-center gap-2 p-4 rounded-md bg-slate-800/50 text-slate-500">
             <AlertCircle size={16} />
             <span className="text-sm">No recurring subscriptions detected</span>
           </div>

@@ -5,26 +5,9 @@ import {
   CheckCircle, 
   AlertTriangle, 
   RefreshCw,
-  ExternalLink,
-  Smartphone
+  ExternalLink
 } from 'lucide-react';
 import Card from './Card';
-
-/**
- * BankID Icon Component
- * Swedish BankID logo representation
- */
-const BankIDIcon = ({ size = 20, className = '' }) => (
-  <svg 
-    viewBox="0 0 24 24" 
-    width={size} 
-    height={size} 
-    className={className}
-    fill="currentColor"
-  >
-    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-  </svg>
-);
 
 /**
  * Connection Status for individual bank
@@ -36,7 +19,7 @@ const BankStatus = ({ name, status, onReauth }) => {
       color: 'text-emerald-400',
       bgColor: 'bg-emerald-500/10',
       borderColor: 'border-emerald-500/30',
-      label: 'Linked',
+      label: 'Connected',
     },
     expired: {
       icon: AlertTriangle,
@@ -47,9 +30,9 @@ const BankStatus = ({ name, status, onReauth }) => {
     },
     syncing: {
       icon: RefreshCw,
-      color: 'text-cyan-400',
-      bgColor: 'bg-cyan-500/10',
-      borderColor: 'border-cyan-500/30',
+      color: 'text-primary-400',
+      bgColor: 'bg-primary-500/10',
+      borderColor: 'border-primary-500/30',
       label: 'Syncing',
     },
     error: {
@@ -62,9 +45,9 @@ const BankStatus = ({ name, status, onReauth }) => {
     disconnected: {
       icon: Link2,
       color: 'text-slate-400',
-      bgColor: 'bg-slate-500/10',
-      borderColor: 'border-slate-500/30',
-      label: 'Not Linked',
+      bgColor: 'bg-slate-800/50',
+      borderColor: 'border-slate-700/50',
+      label: 'Not Connected',
     },
   };
 
@@ -73,51 +56,36 @@ const BankStatus = ({ name, status, onReauth }) => {
   const needsReauth = status === 'expired' || status === 'error';
 
   return (
-    <motion.div
-      initial={{ opacity: 0, x: -10 }}
-      animate={{ opacity: 1, x: 0 }}
-      className={`flex items-center justify-between p-3 rounded-lg ${config.bgColor} border ${config.borderColor}`}
+    <div
+      className={`flex items-center justify-between p-3 rounded-md ${config.bgColor} border ${config.borderColor}`}
     >
       <div className="flex items-center gap-3">
         <Icon 
           size={16} 
           className={`${config.color} ${status === 'syncing' ? 'animate-spin' : ''}`} 
         />
-        <span className="text-sm text-white font-medium">{name}</span>
+        <span className="text-sm text-slate-100 font-medium">{name}</span>
       </div>
       
       <div className="flex items-center gap-2">
         <span className={`text-xs ${config.color}`}>{config.label}</span>
         
         {needsReauth && (
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          <button
             onClick={onReauth}
             className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 transition-colors"
           >
-            <Smartphone size={12} />
-            Re-auth with BankID
-          </motion.button>
-        )}
-        
-        {status === 'connected' && (
-          <CheckCircle size={14} className="text-emerald-400" />
+            Re-auth
+          </button>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 };
 
 /**
  * ConnectionStatus Component
  * Shows the status of linked Swedish banks with BankID integration
- * 
- * @param {Object} props
- * @param {Array} props.banks - Array of bank connection objects
- * @param {boolean} props.isLoading - Whether connection status is being fetched
- * @param {Function} props.onConnect - Callback when user wants to connect a bank
- * @param {Function} props.onReauth - Callback when user needs to re-authenticate
  */
 const ConnectionStatus = ({ 
   banks = [], 
@@ -154,12 +122,12 @@ const ConnectionStatus = ({
   const hasExpired = displayBanks.some(b => b.status === 'expired' || b.status === 'error');
 
   return (
-    <Card title="Bank Connections" icon={Link2} accentColor="cyan">
+    <Card title="Bank Connections" icon={Link2}>
       <div className="space-y-4">
         {/* Summary */}
-        <div className="flex items-center justify-between p-3 rounded-lg bg-slate-900/50">
+        <div className="flex items-center justify-between p-3 rounded-md bg-slate-800/50">
           <span className="text-sm text-slate-400">
-            {connectedCount}/{displayBanks.length} banks linked
+            {connectedCount}/{displayBanks.length} banks connected
           </span>
           {hasExpired && (
             <span className="flex items-center gap-1 text-xs text-amber-400">
@@ -173,7 +141,7 @@ const ConnectionStatus = ({
         <div className="space-y-2">
           {isLoading ? (
             <div className="flex items-center justify-center py-4">
-              <RefreshCw className="animate-spin text-cyan-400" size={20} />
+              <RefreshCw className="animate-spin text-primary-400" size={20} />
               <span className="ml-2 text-sm text-slate-400">Checking connections...</span>
             </div>
           ) : (
@@ -189,34 +157,14 @@ const ConnectionStatus = ({
         </div>
 
         {/* Connect Button */}
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+        <button
           onClick={onConnect}
-          className="w-full relative overflow-hidden group"
+          className="w-full btn btn-primary"
         >
-          {/* Pulse Animation Background */}
-          <div className="absolute inset-0 bg-gradient-to-r from-cyan-600 to-violet-600 rounded-lg" />
-          <motion.div
-            animate={{
-              scale: [1, 1.2, 1],
-              opacity: [0.5, 0, 0.5],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: 'easeInOut',
-            }}
-            className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-violet-400 rounded-lg"
-          />
-          
-          {/* Button Content */}
-          <div className="relative flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white font-medium">
-            <BankIDIcon size={20} />
-            <span>Connect Bank with BankID</span>
-            <ExternalLink size={14} className="opacity-60" />
-          </div>
-        </motion.button>
+          <Link2 size={16} />
+          <span>Connect Bank</span>
+          <ExternalLink size={14} className="opacity-60" />
+        </button>
 
         {/* Info Text */}
         <p className="text-xs text-slate-500 text-center">
