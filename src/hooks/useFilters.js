@@ -77,10 +77,16 @@ const useFilters = (transactions = []) => {
 
     // Amount range filter
     if (minAmount !== null && minAmount !== '') {
-      filtered = filtered.filter(t => Math.abs(t.amount) >= parseFloat(minAmount));
+      const min = parseFloat(minAmount);
+      if (!isNaN(min)) {
+        filtered = filtered.filter(t => Math.abs(t.amount) >= min);
+      }
     }
     if (maxAmount !== null && maxAmount !== '') {
-      filtered = filtered.filter(t => Math.abs(t.amount) <= parseFloat(maxAmount));
+      const max = parseFloat(maxAmount);
+      if (!isNaN(max)) {
+        filtered = filtered.filter(t => Math.abs(t.amount) <= max);
+      }
     }
 
     return filtered;
