@@ -29,7 +29,7 @@ import {
  */
 const TopBar = ({ 
   sidebarCollapsed = false,
-  dateRange = '3M',
+  dateRange = 'ALL',
   onDateRangeChange,
   onRefresh,
   isRefreshing = false,
@@ -137,7 +137,7 @@ const TopBar = ({
               text-slate-300 text-sm hover:bg-slate-700 transition-colors"
           >
             <Calendar size={16} />
-            <span>{dateRanges.find(d => d.value === dateRange)?.label || '3 Months'}</span>
+            <span>{dateRanges.find(d => d.value === dateRange)?.label || 'All Time'}</span>
             <ChevronDown size={14} className={`transition-transform ${dateDropdownOpen ? 'rotate-180' : ''}`} />
           </button>
           

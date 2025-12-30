@@ -13,7 +13,7 @@ import { useState, useMemo, useCallback } from 'react';
 const useFilters = (transactions = []) => {
   // Filter state
   const [searchQuery, setSearchQuery] = useState('');
-  const [dateRange, setDateRange] = useState('3M'); // '1M', '3M', '6M', '1Y', 'ALL'
+  const [dateRange, setDateRange] = useState('ALL'); // '1M', '3M', '6M', '1Y', 'ALL'
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [minAmount, setMinAmount] = useState(null);
   const [maxAmount, setMaxAmount] = useState(null);

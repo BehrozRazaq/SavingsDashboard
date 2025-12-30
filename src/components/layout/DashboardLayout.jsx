@@ -28,7 +28,7 @@ const DashboardLayout = ({
   isRefreshing = false,
   searchQuery = '',
   onSearchChange,
-  dateRange = '3M',
+  dateRange = 'ALL',
   onDateRangeChange,
   hasActiveFilters = false,
   activeFilterCount = 0,
