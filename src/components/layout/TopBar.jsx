@@ -8,7 +8,8 @@ import {
   Calendar,
   ChevronDown,
   Check,
-  X
+  X,
+  Filter
 } from 'lucide-react';
 
 /**
@@ -20,17 +21,26 @@ import {
  * @param {Function} props.onRefresh - Refresh data handler
  * @param {boolean} props.isRefreshing - Whether data is refreshing
  * @param {Object} props.connectionStatus - Bank connection status
+ * @param {string} props.searchQuery - Current search query
+ * @param {Function} props.onSearchChange - Search query change handler
+ * @param {boolean} props.hasActiveFilters - Whether any filters are active
+ * @param {number} props.activeFilterCount - Number of active filters
+ * @param {Function} props.onClearFilters - Clear all filters handler
  */
 const TopBar = ({ 
   sidebarCollapsed = false,
-  dateRange = '3M',
+  dateRange = 'ALL',
   onDateRangeChange,
   onRefresh,
   isRefreshing = false,
-  connectionStatus = { connected: 0, total: 2 }
+  connectionStatus = { connected: 0, total: 2 },
+  searchQuery = '',
+  onSearchChange,
+  hasActiveFilters = false,
+  activeFilterCount = 0,
+  onClearFilters
 }) => {
   const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [dateDropdownOpen, setDateDropdownOpen] = useState(false);
 
   const dateRanges = [
@@ -69,7 +79,7 @@ const TopBar = ({
                       type="text"
                       placeholder="Search..."
                       value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onChange={(e) => onSearchChange?.(e.target.value)}
                       autoFocus
                       className="w-full pl-10 pr-10 py-2 bg-slate-800 border border-slate-700 rounded-md
                         text-slate-100 placeholder-slate-500 text-sm
@@ -78,7 +88,7 @@ const TopBar = ({
                     <button
                       onClick={() => {
                         setSearchOpen(false);
-                        setSearchQuery('');
+                        onSearchChange?.('');
                       }}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
                     >
@@ -97,6 +107,26 @@ const TopBar = ({
               )}
             </AnimatePresence>
           </div>
+
+          {/* Active Filters Indicator */}
+          {hasActiveFilters && (
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-primary-500/10 border border-primary-500/30">
+                <Filter size={14} className="text-primary-400" />
+                <span className="text-xs text-primary-400 font-medium">
+                  {activeFilterCount} filter{activeFilterCount !== 1 ? 's' : ''} active
+                </span>
+              </div>
+              <button
+                onClick={onClearFilters}
+                className="p-1.5 rounded-md text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
+                aria-label="Clear all filters"
+                title="Clear all filters"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Center Section - Date Range */}
@@ -107,7 +137,7 @@ const TopBar = ({
               text-slate-300 text-sm hover:bg-slate-700 transition-colors"
           >
             <Calendar size={16} />
-            <span>{dateRanges.find(d => d.value === dateRange)?.label || '3 Months'}</span>
+            <span>{dateRanges.find(d => d.value === dateRange)?.label || 'All Time'}</span>
             <ChevronDown size={14} className={`transition-transform ${dateDropdownOpen ? 'rotate-180' : ''}`} />
           </button>
           
