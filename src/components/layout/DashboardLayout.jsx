@@ -11,6 +11,13 @@ import TopBar from './TopBar';
  * @param {Object} props.connectionStatus - Bank connection status
  * @param {Function} props.onRefresh - Refresh data handler
  * @param {boolean} props.isRefreshing - Whether data is refreshing
+ * @param {string} props.searchQuery - Current search query
+ * @param {Function} props.onSearchChange - Search query change handler
+ * @param {string} props.dateRange - Current date range
+ * @param {Function} props.onDateRangeChange - Date range change handler
+ * @param {boolean} props.hasActiveFilters - Whether any filters are active
+ * @param {number} props.activeFilterCount - Number of active filters
+ * @param {Function} props.onClearFilters - Clear all filters handler
  */
 const DashboardLayout = ({ 
   children,
@@ -18,7 +25,14 @@ const DashboardLayout = ({
   onNavigate,
   connectionStatus = { connected: 0, total: 2 },
   onRefresh,
-  isRefreshing = false
+  isRefreshing = false,
+  searchQuery = '',
+  onSearchChange,
+  dateRange = '3M',
+  onDateRangeChange,
+  hasActiveFilters = false,
+  activeFilterCount = 0,
+  onClearFilters
 }) => {
   // Persist sidebar state in localStorage
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -28,8 +42,6 @@ const DashboardLayout = ({
     }
     return false;
   });
-
-  const [dateRange, setDateRange] = useState('3M');
 
   // Persist sidebar state
   useEffect(() => {
@@ -54,10 +66,15 @@ const DashboardLayout = ({
       <TopBar
         sidebarCollapsed={sidebarCollapsed}
         dateRange={dateRange}
-        onDateRangeChange={setDateRange}
+        onDateRangeChange={onDateRangeChange}
         onRefresh={onRefresh}
         isRefreshing={isRefreshing}
         connectionStatus={connectionStatus}
+        searchQuery={searchQuery}
+        onSearchChange={onSearchChange}
+        hasActiveFilters={hasActiveFilters}
+        activeFilterCount={activeFilterCount}
+        onClearFilters={onClearFilters}
       />
 
       {/* Main Content Area */}

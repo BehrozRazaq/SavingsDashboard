@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { BarChart3, TrendingUp, Wallet, Clock, AlertCircle } from 'lucide-react';
 
@@ -15,8 +15,12 @@ import PointsLost from './components/PointsLost';
 import FikaVisualizer from './components/FikaVisualizer';
 import ConnectionStatus from './components/ConnectionStatus';
 
-// Import custom hook
+// Import custom hooks
 import useFinancialData from './hooks/useFinancialData';
+import useFilters from './hooks/useFilters';
+
+// Import utilities
+import { calculateMetrics } from './utils/metricsCalculator';
 
 // API Configuration
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -85,13 +89,7 @@ function App() {
 
   // Get financial data from custom hook
   const {
-    subscriptions,
-    totalSubscriptionCost,
-    lostPoints,
-    missedTravelTransactions,
-    totalFikaSpend,
-    fikaCount,
-    bunEquivalent,
+    mergedTransactions,
     isConnected,
     isLoading: isLoadingData,
     error: dataError,
@@ -99,6 +97,32 @@ function App() {
     refreshData,
     checkConnectionStatus
   } = useFinancialData();
+
+  // Initialize filters with merged transactions
+  const {
+    filteredTransactions,
+    searchQuery,
+    dateRange,
+    setSearchQuery,
+    setDateRange,
+    hasActiveFilters,
+    activeFilterCount,
+    clearFilters,
+  } = useFilters(mergedTransactions);
+
+  // Calculate metrics from filtered transactions
+  const {
+    subscriptions,
+    totalSubscriptionCost,
+    lostPoints,
+    missedTravelTransactions,
+    totalFikaSpend,
+    fikaCount,
+    bunEquivalent,
+  } = useMemo(
+    () => calculateMetrics(filteredTransactions),
+    [filteredTransactions]
+  );
 
   /**
    * Check for URL params from OAuth callback
@@ -282,6 +306,13 @@ function App() {
       connectionStatus={connectionStatus}
       onRefresh={handleRefresh}
       isRefreshing={isRefreshing || isLoadingData}
+      searchQuery={searchQuery}
+      onSearchChange={setSearchQuery}
+      dateRange={dateRange}
+      onDateRangeChange={setDateRange}
+      hasActiveFilters={hasActiveFilters}
+      activeFilterCount={activeFilterCount}
+      onClearFilters={clearFilters}
     >
       {/* Toast Notifications */}
       {toast && (
@@ -397,6 +428,7 @@ function App() {
           animate="visible"
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
         >
+          {/* ConnectionStatus - Always visible */}
           <motion.div variants={itemVariants}>
             <ConnectionStatus
               banks={bankConnections}
@@ -407,25 +439,85 @@ function App() {
               lastSynced={lastSynced}
             />
           </motion.div>
-          <motion.div variants={itemVariants}>
-            <SubscriptionSlayer 
-              subscriptions={subscriptions} 
-              totalCost={totalSubscriptionCost} 
-            />
-          </motion.div>
-          <motion.div variants={itemVariants}>
-            <PointsLost 
-              lostPoints={lostPoints} 
-              missedTransactions={missedTravelTransactions} 
-            />
-          </motion.div>
-          <motion.div variants={itemVariants}>
-            <FikaVisualizer 
-              totalFikaSpend={totalFikaSpend} 
-              bunEquivalent={bunEquivalent}
-              fikaCount={fikaCount}
-            />
-          </motion.div>
+
+          {/* SubscriptionSlayer - Show when there are transactions to analyze */}
+          {filteredTransactions.length > 0 ? (
+            <motion.div variants={itemVariants}>
+              <SubscriptionSlayer 
+                subscriptions={subscriptions} 
+                totalCost={totalSubscriptionCost} 
+              />
+            </motion.div>
+          ) : (
+            <motion.div variants={itemVariants}>
+              <div className="bg-navy-900 rounded-lg border border-slate-700/50 p-6 shadow-card">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-md bg-slate-800/80">
+                    <AlertCircle className="text-slate-400" size={20} />
+                  </div>
+                  <h3 className="text-slate-100 font-medium">Subscriptions</h3>
+                </div>
+                <p className="text-sm text-slate-400">
+                  {mergedTransactions.length === 0 
+                    ? 'Connect your bank to detect recurring subscriptions'
+                    : 'No transactions match your filters'}
+                </p>
+              </div>
+            </motion.div>
+          )}
+
+          {/* PointsLost - Show when there are transactions to analyze */}
+          {filteredTransactions.length > 0 ? (
+            <motion.div variants={itemVariants}>
+              <PointsLost 
+                lostPoints={lostPoints} 
+                missedTransactions={missedTravelTransactions} 
+              />
+            </motion.div>
+          ) : (
+            <motion.div variants={itemVariants}>
+              <div className="bg-navy-900 rounded-lg border border-slate-700/50 p-6 shadow-card">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-md bg-slate-800/80">
+                    <AlertCircle className="text-slate-400" size={20} />
+                  </div>
+                  <h3 className="text-slate-100 font-medium">Points Optimizer</h3>
+                </div>
+                <p className="text-sm text-slate-400">
+                  {mergedTransactions.length === 0
+                    ? 'Connect your bank to optimize your travel rewards'
+                    : 'No transactions match your filters'}
+                </p>
+              </div>
+            </motion.div>
+          )}
+
+          {/* FikaVisualizer - Show when there are transactions to analyze */}
+          {filteredTransactions.length > 0 ? (
+            <motion.div variants={itemVariants}>
+              <FikaVisualizer 
+                totalFikaSpend={totalFikaSpend} 
+                bunEquivalent={bunEquivalent}
+                fikaCount={fikaCount}
+              />
+            </motion.div>
+          ) : (
+            <motion.div variants={itemVariants}>
+              <div className="bg-navy-900 rounded-lg border border-slate-700/50 p-6 shadow-card">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-md bg-slate-800/80">
+                    <AlertCircle className="text-slate-400" size={20} />
+                  </div>
+                  <h3 className="text-slate-100 font-medium">Fika Index</h3>
+                </div>
+                <p className="text-sm text-slate-400">
+                  {mergedTransactions.length === 0
+                    ? 'Connect your bank to track your fika spending'
+                    : 'No transactions match your filters'}
+                </p>
+              </div>
+            </motion.div>
+          )}
         </motion.div>
       </div>
 
