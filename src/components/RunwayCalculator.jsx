@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Gauge, Clock, AlertTriangle } from 'lucide-react';
+import { Hourglass, Clock } from 'lucide-react';
 import Card from './Card';
 
 /**
@@ -54,31 +54,17 @@ const RunwayCalculator = () => {
     return () => clearTimeout(debounce);
   }, [inputs]);
 
-  const getStatusColor = (status) => {
+  const getStatusConfig = (status) => {
     switch (status) {
-      case 'healthy': return 'text-emerald-400';
-      case 'caution': return 'text-amber-400';
-      case 'critical': return 'text-red-400';
-      default: return 'text-slate-400';
+      case 'healthy': 
+        return { color: 'text-emerald-400', bg: 'bg-emerald-500', label: 'Healthy' };
+      case 'caution': 
+        return { color: 'text-amber-400', bg: 'bg-amber-500', label: 'Caution' };
+      case 'critical': 
+        return { color: 'text-red-400', bg: 'bg-red-500', label: 'Critical' };
+      default: 
+        return { color: 'text-slate-400', bg: 'bg-slate-500', label: 'Unknown' };
     }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'healthy': return '🟢';
-      case 'caution': return '🟡';
-      case 'critical': return '🔴';
-      default: return '⚪';
-    }
-  };
-
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(value);
   };
 
   const formatDate = (date) => {
@@ -89,14 +75,14 @@ const RunwayCalculator = () => {
   };
 
   return (
-    <Card title="Runway Simulator" icon={Gauge} accentColor="cyan">
+    <Card title="Runway Calculator" icon={Hourglass}>
       <div className="space-y-4">
         {/* Total Cash Input */}
         <div>
-          <label className="label-cyber">Total Available Cash ($)</label>
+          <label className="label-professional">Total Available Cash ($)</label>
           <input
             type="number"
-            className="input-cyber"
+            className="input-professional"
             value={inputs.totalCash}
             onChange={(e) => handleInputChange('totalCash', e.target.value)}
             placeholder="100000"
@@ -105,10 +91,10 @@ const RunwayCalculator = () => {
 
         {/* Monthly Burn Rate Input */}
         <div>
-          <label className="label-cyber">Monthly Burn Rate ($)</label>
+          <label className="label-professional">Monthly Burn Rate ($)</label>
           <input
             type="number"
-            className="input-cyber"
+            className="input-professional"
             value={inputs.monthlyBurn}
             onChange={(e) => handleInputChange('monthlyBurn', e.target.value)}
             placeholder="5000"
@@ -122,20 +108,20 @@ const RunwayCalculator = () => {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="mt-6 pt-4 border-t border-cyan-500/20"
+              className="mt-6 pt-4 border-t border-slate-700/50"
             >
               <div className="text-center">
-                <div className="flex items-center justify-center gap-2 mb-1">
-                  <span>{getStatusIcon(result.status)}</span>
-                  <p className={`text-sm font-medium ${getStatusColor(result.status)}`}>
-                    {result.status.charAt(0).toUpperCase() + result.status.slice(1)} Status
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <div className={`w-2 h-2 rounded-full ${getStatusConfig(result.status).bg}`} />
+                  <p className={`text-sm font-medium ${getStatusConfig(result.status).color}`}>
+                    {getStatusConfig(result.status).label} Status
                   </p>
                 </div>
                 <motion.p
                   key={result.monthsRemaining}
-                  initial={{ scale: 1.2, opacity: 0 }}
+                  initial={{ scale: 1.1, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  className="result-cyber"
+                  className="text-3xl font-bold text-primary-400"
                 >
                   {result.monthsRemaining} months
                 </motion.p>
@@ -146,31 +132,25 @@ const RunwayCalculator = () => {
               
               {/* Progress Bar */}
               <div className="mt-4">
-                <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+                <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ 
                       width: `${Math.min((result.monthsRemaining / 60) * 100, 100)}%` 
                     }}
                     transition={{ duration: 0.5 }}
-                    className={`h-full rounded-full ${
-                      result.status === 'healthy' 
-                        ? 'bg-gradient-to-r from-emerald-500 to-cyan-500'
-                        : result.status === 'caution'
-                        ? 'bg-gradient-to-r from-amber-500 to-orange-500'
-                        : 'bg-gradient-to-r from-red-500 to-pink-500'
-                    }`}
+                    className={`h-full rounded-full ${getStatusConfig(result.status).bg}`}
                   />
                 </div>
               </div>
 
               {/* Runway End Date */}
-              <div className="mt-4 p-3 rounded-lg bg-slate-900/50 text-center">
+              <div className="mt-4 p-3 rounded-md bg-slate-800/50 text-center">
                 <div className="flex items-center justify-center gap-2 text-slate-400">
                   <Clock size={14} />
                   <span className="text-xs">Funds depleted by</span>
                 </div>
-                <p className="text-sm font-mono text-cyan-400 mt-1">
+                <p className="text-sm font-mono text-teal-400 mt-1">
                   {formatDate(result.runwayDate)}
                 </p>
               </div>

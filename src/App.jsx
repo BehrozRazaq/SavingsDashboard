@@ -1,134 +1,534 @@
-import React from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, Github, Zap } from 'lucide-react';
+import { BarChart3, TrendingUp, Wallet, Clock, AlertCircle } from 'lucide-react';
+
+// Import layout components
+import { DashboardLayout } from './components/layout';
 
 // Import components
 import FireCalculator from './components/FireCalculator';
 import RunwayCalculator from './components/RunwayCalculator';
 import CompoundChart from './components/CompoundChart';
 import InflationAdjuster from './components/InflationAdjuster';
+import SubscriptionSlayer from './components/SubscriptionSlayer';
+import PointsLost from './components/PointsLost';
+import FikaVisualizer from './components/FikaVisualizer';
+import ConnectionStatus from './components/ConnectionStatus';
+
+// Import custom hooks
+import useFinancialData from './hooks/useFinancialData';
+import useFilters from './hooks/useFilters';
+
+// Import utilities
+import { calculateMetrics } from './utils/metricsCalculator';
+
+// API Configuration
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 /**
- * FluxFinance - Personal Finance Dashboard
- * A cyberpunk-styled financial utility suite
+ * Toast notification for errors/messages
+ */
+const Toast = ({ message, type = 'error', onClose }) => {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 5000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg flex items-center gap-3 ${
+      type === 'error' ? 'bg-red-500/90' : type === 'success' ? 'bg-emerald-500/90' : 'bg-primary-500/90'
+    } text-white max-w-sm`}>
+      <AlertCircle size={20} />
+      <span className="text-sm">{message}</span>
+      <button onClick={onClose} className="ml-2 hover:opacity-80">×</button>
+    </div>
+  );
+};
+
+/**
+ * MetricCard - KPI card for dashboard overview
+ */
+const MetricCard = ({ title, value, change, changeType, icon: Icon }) => (
+  <div className="bg-navy-900 rounded-lg border border-slate-700/50 p-6 shadow-card hover:shadow-card-hover transition-shadow">
+    <div className="flex items-start justify-between">
+      <div>
+        <p className="text-sm text-slate-400 mb-1">{title}</p>
+        <p className="text-2xl font-bold text-slate-100">{value}</p>
+        {change && (
+          <p className={`text-sm mt-1 ${changeType === 'positive' ? 'text-emerald-400' : changeType === 'negative' ? 'text-red-400' : 'text-slate-400'}`}>
+            {change}
+          </p>
+        )}
+      </div>
+      {Icon && (
+        <div className="p-2 rounded-md bg-slate-800/80">
+          <Icon size={20} className="text-slate-400" />
+        </div>
+      )}
+    </div>
+  </div>
+);
+
+/**
+ * FluxFinance - Professional Finance Dashboard
+ * Enterprise-grade financial utility suite
  */
 function App() {
+  // Navigation state
+  const [activeSection, setActiveSection] = useState('dashboard');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [toast, setToast] = useState(null);
+
+  // Bank connection state (will be updated from API)
+  const [bankConnections, setBankConnections] = useState([
+    { id: 'nordea', name: 'Nordea', status: 'disconnected' },
+    { id: 'norwegian', name: 'Bank Norwegian', status: 'disconnected' }
+  ]);
+  const [isLoadingConnections, setIsLoadingConnections] = useState(false);
+  const [lastSynced, setLastSynced] = useState(null);
+
+  // Get financial data from custom hook
+  const {
+    mergedTransactions,
+    isConnected,
+    isLoading: isLoadingData,
+    error: dataError,
+    usingMockData,
+    refreshData,
+    checkConnectionStatus
+  } = useFinancialData();
+
+  // Initialize filters with merged transactions
+  const {
+    filteredTransactions,
+    searchQuery,
+    dateRange,
+    setSearchQuery,
+    setDateRange,
+    hasActiveFilters,
+    activeFilterCount,
+    clearFilters,
+  } = useFilters(mergedTransactions);
+
+  // Calculate metrics from filtered transactions
+  const {
+    subscriptions,
+    totalSubscriptionCost,
+    lostPoints,
+    missedTravelTransactions,
+    totalFikaSpend,
+    fikaCount,
+    bunEquivalent,
+  } = useMemo(
+    () => calculateMetrics(filteredTransactions),
+    [filteredTransactions]
+  );
+
+  /**
+   * Check for URL params from OAuth callback
+   */
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const connected = params.get('connected');
+    const error = params.get('error');
+
+    if (connected === 'true') {
+      setToast({ message: 'Bank connected successfully!', type: 'success' });
+      // Refresh connection status
+      fetchConnectionStatus();
+      // Clear URL params
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (error) {
+      setToast({ message: `Connection failed: ${error}`, type: 'error' });
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
+  /**
+   * Fetch connection status from API
+   */
+  const fetchConnectionStatus = useCallback(async () => {
+    try {
+      setIsLoadingConnections(true);
+      const response = await fetch(`${API_URL}/api/tink/status`, {
+        credentials: 'include'
+      });
+      const data = await response.json();
+
+      if (data.connected && data.banks) {
+        // Map API response to our bank connection format
+        setBankConnections(prevBanks => prevBanks.map(bank => {
+          const connectedBank = data.banks.find(b => 
+            b.provider?.toLowerCase().includes(bank.id)
+          );
+          if (connectedBank) {
+            return {
+              ...bank,
+              status: connectedBank.state || 'connected',
+              needsReauth: connectedBank.needsReauth,
+              lastUpdated: connectedBank.statusUpdated
+            };
+          }
+          return bank;
+        }));
+        setLastSynced(data.lastSynced);
+      }
+    } catch (err) {
+      console.error('Failed to fetch connection status:', err);
+    } finally {
+      setIsLoadingConnections(false);
+    }
+  }, []); // No dependencies needed - uses functional state update
+
+  // Poll connection status every 30 seconds when connected
+  useEffect(() => {
+    if (!isConnected) return;
+
+    const interval = setInterval(() => {
+      fetchConnectionStatus();
+    }, 30 * 1000);
+
+    return () => clearInterval(interval);
+  }, [isConnected, fetchConnectionStatus]);
+
+  // Calculate connection status
+  const connectionStatus = {
+    connected: bankConnections.filter(b => b.status === 'connected').length,
+    total: bankConnections.length
+  };
+
+  /**
+   * Handle data refresh
+   */
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    await Promise.all([
+      refreshData(),
+      fetchConnectionStatus()
+    ]);
+    setIsRefreshing(false);
+  }, [refreshData, fetchConnectionStatus]);
+
+  /**
+   * Handle bank connection via Tink API
+   */
+  const handleConnectBank = useCallback(async () => {
+    try {
+      setIsLoadingConnections(true);
+      const response = await fetch(`${API_URL}/api/tink/connect`, {
+        credentials: 'include'
+      });
+      const data = await response.json();
+      
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        console.error('Failed to get Tink Link URL:', data.error);
+        setToast({ message: 'Unable to connect to bank. Please try again later.', type: 'error' });
+      }
+    } catch (error) {
+      console.error('Bank connection error:', error);
+      setToast({ message: 'Unable to connect to bank service. Please check your internet connection.', type: 'error' });
+    } finally {
+      setIsLoadingConnections(false);
+    }
+  }, []);
+
+  /**
+   * Handle bank re-authentication
+   */
+  const handleReauth = useCallback(async (bank) => {
+    console.log('Re-authenticating bank:', bank.name);
+    await handleConnectBank();
+  }, [handleConnectBank]);
+
+  /**
+   * Handle bank disconnection
+   */
+  const handleDisconnect = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/tink/disconnect`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        setBankConnections(prev => prev.map(bank => ({
+          ...bank,
+          status: 'disconnected'
+        })));
+        setToast({ message: 'Bank disconnected successfully', type: 'success' });
+        // Refresh data to use mock data
+        checkConnectionStatus();
+      }
+    } catch (err) {
+      console.error('Failed to disconnect:', err);
+      setToast({ message: 'Failed to disconnect bank', type: 'error' });
+    }
+  }, [checkConnectionStatus]);
+
+  /**
+   * Handle navigation
+   */
+  const handleNavigate = useCallback((section) => {
+    setActiveSection(section);
+  }, []);
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.1
+        staggerChildren: 0.05
       }
     }
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: { opacity: 0, y: 10 },
     visible: { opacity: 1, y: 0 }
   };
 
+  // Format currency for display
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('sv-SE', {
+      style: 'currency',
+      currency: 'SEK',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(value);
+  };
+
   return (
-    <div className="min-h-screen bg-slate-950 bg-animated">
-      {/* Background Effects */}
-      <div className="fixed inset-0 pointer-events-none">
-        {/* Gradient orbs */}
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-violet-600/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-cyan-600/20 rounded-full blur-3xl" />
-        {/* Grid overlay */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(139,92,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(139,92,246,0.03)_1px,transparent_1px)] bg-[size:50px_50px]" />
+    <DashboardLayout
+      activeSection={activeSection}
+      onNavigate={handleNavigate}
+      connectionStatus={connectionStatus}
+      onRefresh={handleRefresh}
+      isRefreshing={isRefreshing || isLoadingData}
+      searchQuery={searchQuery}
+      onSearchChange={setSearchQuery}
+      dateRange={dateRange}
+      onDateRangeChange={setDateRange}
+      hasActiveFilters={hasActiveFilters}
+      activeFilterCount={activeFilterCount}
+      onClearFilters={clearFilters}
+    >
+      {/* Toast Notifications */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+
+      {/* Data Source Indicator */}
+      {usingMockData && (
+        <div className="mb-4 p-3 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-400 text-sm flex items-center gap-2">
+          <AlertCircle size={16} />
+          <span>Using demo data. Connect your bank to see real transactions.</span>
+        </div>
+      )}
+
+      {/* Page Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-slate-100">Dashboard</h1>
+        <p className="text-slate-400 mt-1">Overview of your financial metrics and tools</p>
       </div>
 
-      {/* Main Content */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <motion.header
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-12"
-        >
-          <div className="inline-flex items-center gap-3 mb-4">
-            <div className="p-3 rounded-xl bg-gradient-to-br from-violet-600 to-cyan-600 shadow-lg shadow-violet-500/30">
-              <Zap className="text-white" size={28} />
-            </div>
-            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-white via-violet-200 to-cyan-200 bg-clip-text text-transparent">
-              FluxFinance
-            </h1>
-          </div>
-          <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-            Your personal finance command center. Track, calculate, and visualize your path to financial freedom.
-          </p>
-          
-          {/* Status Badges */}
-          <div className="flex items-center justify-center gap-3 mt-6">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              System Online
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-violet-500/10 text-violet-400 border border-violet-500/20">
-              <Sparkles size={12} />
-              v1.0.0
-            </span>
-          </div>
-        </motion.header>
+      {/* KPI Cards Row */}
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
+      >
+        <motion.div variants={itemVariants}>
+          <MetricCard
+            title="Monthly Subscriptions"
+            value={formatCurrency(totalSubscriptionCost)}
+            change={`${subscriptions.length} active`}
+            icon={Wallet}
+          />
+        </motion.div>
+        <motion.div variants={itemVariants}>
+          <MetricCard
+            title="Missed CashPoints"
+            value={lostPoints.toLocaleString()}
+            change={`${missedTravelTransactions.length} transactions`}
+            changeType="negative"
+            icon={TrendingUp}
+          />
+        </motion.div>
+        <motion.div variants={itemVariants}>
+          <MetricCard
+            title="Fika Spend"
+            value={formatCurrency(totalFikaSpend)}
+            change={`≈ ${bunEquivalent} kanelbullar`}
+            icon={Clock}
+          />
+        </motion.div>
+        <motion.div variants={itemVariants}>
+          <MetricCard
+            title="Banks Connected"
+            value={`${connectionStatus.connected}/${connectionStatus.total}`}
+            change={connectionStatus.connected > 0 ? 'Synced' : 'Not connected'}
+            changeType={connectionStatus.connected > 0 ? 'positive' : undefined}
+            icon={BarChart3}
+          />
+        </motion.div>
+      </motion.div>
 
-        {/* Dashboard Grid */}
-        <motion.main
+      {/* Main Calculator Grid */}
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8"
+      >
+        <motion.div variants={itemVariants}>
+          <FireCalculator />
+        </motion.div>
+        <motion.div variants={itemVariants}>
+          <RunwayCalculator />
+        </motion.div>
+        <motion.div variants={itemVariants}>
+          <InflationAdjuster />
+        </motion.div>
+      </motion.div>
+
+      {/* Compound Chart - Full Width */}
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="mb-8"
+      >
+        <motion.div variants={itemVariants}>
+          <CompoundChart />
+        </motion.div>
+      </motion.div>
+
+      {/* Smart Analytics Section */}
+      <div className="mb-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 rounded-md bg-slate-800/80">
+            <BarChart3 className="text-slate-400" size={20} />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-slate-100">Smart Analytics</h2>
+            <p className="text-sm text-slate-400">Swedish banking insights</p>
+          </div>
+        </div>
+
+        <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
         >
-          {/* Freedom Engine (FIRE Calculator) */}
+          {/* ConnectionStatus - Always visible */}
           <motion.div variants={itemVariants}>
-            <FireCalculator />
+            <ConnectionStatus
+              banks={bankConnections}
+              isLoading={isLoadingConnections}
+              onConnect={handleConnectBank}
+              onReauth={handleReauth}
+              onDisconnect={handleDisconnect}
+              lastSynced={lastSynced}
+            />
           </motion.div>
 
-          {/* Runway Simulator */}
-          <motion.div variants={itemVariants}>
-            <RunwayCalculator />
-          </motion.div>
+          {/* SubscriptionSlayer - Show when there are transactions to analyze */}
+          {filteredTransactions.length > 0 ? (
+            <motion.div variants={itemVariants}>
+              <SubscriptionSlayer 
+                subscriptions={subscriptions} 
+                totalCost={totalSubscriptionCost} 
+              />
+            </motion.div>
+          ) : (
+            <motion.div variants={itemVariants}>
+              <div className="bg-navy-900 rounded-lg border border-slate-700/50 p-6 shadow-card">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-md bg-slate-800/80">
+                    <AlertCircle className="text-slate-400" size={20} />
+                  </div>
+                  <h3 className="text-slate-100 font-medium">Subscriptions</h3>
+                </div>
+                <p className="text-sm text-slate-400">
+                  {mergedTransactions.length === 0 
+                    ? 'Connect your bank to detect recurring subscriptions'
+                    : 'No transactions match your filters'}
+                </p>
+              </div>
+            </motion.div>
+          )}
 
-          {/* Inflation Adjuster */}
-          <motion.div variants={itemVariants}>
-            <InflationAdjuster />
-          </motion.div>
+          {/* PointsLost - Show when there are transactions to analyze */}
+          {filteredTransactions.length > 0 ? (
+            <motion.div variants={itemVariants}>
+              <PointsLost 
+                lostPoints={lostPoints} 
+                missedTransactions={missedTravelTransactions} 
+              />
+            </motion.div>
+          ) : (
+            <motion.div variants={itemVariants}>
+              <div className="bg-navy-900 rounded-lg border border-slate-700/50 p-6 shadow-card">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-md bg-slate-800/80">
+                    <AlertCircle className="text-slate-400" size={20} />
+                  </div>
+                  <h3 className="text-slate-100 font-medium">Points Optimizer</h3>
+                </div>
+                <p className="text-sm text-slate-400">
+                  {mergedTransactions.length === 0
+                    ? 'Connect your bank to optimize your travel rewards'
+                    : 'No transactions match your filters'}
+                </p>
+              </div>
+            </motion.div>
+          )}
 
-          {/* Compound Visualizer - Full Width */}
-          <motion.div variants={itemVariants} className="md:col-span-2 lg:col-span-3">
-            <CompoundChart />
-          </motion.div>
-        </motion.main>
-
-        {/* Footer */}
-        <motion.footer
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
-          className="mt-16 text-center"
-        >
-          <div className="inline-flex items-center gap-4 px-6 py-3 rounded-xl bg-slate-900/50 border border-slate-800">
-            <p className="text-slate-500 text-sm">
-              Built with React, Tailwind & Recharts
-            </p>
-            <span className="text-slate-700">|</span>
-            <a
-              href="https://github.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-slate-400 hover:text-violet-400 transition-colors text-sm"
-            >
-              <Github size={14} />
-              Source
-            </a>
-          </div>
-          <p className="mt-4 text-slate-600 text-xs">
-            © {new Date().getFullYear()} FluxFinance. For educational purposes only.
-          </p>
-        </motion.footer>
+          {/* FikaVisualizer - Show when there are transactions to analyze */}
+          {filteredTransactions.length > 0 ? (
+            <motion.div variants={itemVariants}>
+              <FikaVisualizer 
+                totalFikaSpend={totalFikaSpend} 
+                bunEquivalent={bunEquivalent}
+                fikaCount={fikaCount}
+              />
+            </motion.div>
+          ) : (
+            <motion.div variants={itemVariants}>
+              <div className="bg-navy-900 rounded-lg border border-slate-700/50 p-6 shadow-card">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-md bg-slate-800/80">
+                    <AlertCircle className="text-slate-400" size={20} />
+                  </div>
+                  <h3 className="text-slate-100 font-medium">Fika Index</h3>
+                </div>
+                <p className="text-sm text-slate-400">
+                  {mergedTransactions.length === 0
+                    ? 'Connect your bank to track your fika spending'
+                    : 'No transactions match your filters'}
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </motion.div>
       </div>
-    </div>
+
+      {/* Footer */}
+      <footer className="mt-12 pt-6 border-t border-slate-700/50">
+        <div className="flex items-center justify-between text-sm text-slate-500">
+          <p>© {new Date().getFullYear()} FluxFinance. For educational purposes only.</p>
+          <p>Built with React, Tailwind & Recharts</p>
+        </div>
+      </footer>
+    </DashboardLayout>
   );
 }
 

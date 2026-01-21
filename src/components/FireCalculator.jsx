@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Flame, TrendingUp, Calculator } from 'lucide-react';
+import { Flame } from 'lucide-react';
 import Card from './Card';
 
 /**
@@ -87,14 +87,14 @@ const FireCalculator = () => {
   };
 
   return (
-    <Card title="Freedom Engine" icon={Flame} accentColor="violet">
+    <Card title="FIRE Calculator" icon={Flame}>
       <div className="space-y-4">
         {/* Net Worth Input */}
         <div>
-          <label className="label-cyber">Current Net Worth ($)</label>
+          <label className="label-professional">Current Net Worth ($)</label>
           <input
             type="number"
-            className="input-cyber"
+            className="input-professional"
             value={inputs.netWorth}
             onChange={(e) => handleInputChange('netWorth', e.target.value)}
             placeholder="50000"
@@ -103,10 +103,10 @@ const FireCalculator = () => {
 
         {/* Monthly Savings Input */}
         <div>
-          <label className="label-cyber">Monthly Savings ($)</label>
+          <label className="label-professional">Monthly Savings ($)</label>
           <input
             type="number"
-            className="input-cyber"
+            className="input-professional"
             value={inputs.monthlySavings}
             onChange={(e) => handleInputChange('monthlySavings', e.target.value)}
             placeholder="2000"
@@ -115,11 +115,11 @@ const FireCalculator = () => {
 
         {/* Annual Return Input */}
         <div>
-          <label className="label-cyber">Expected Annual Return (%)</label>
+          <label className="label-professional">Expected Annual Return (%)</label>
           <input
             type="number"
             step="0.1"
-            className="input-cyber"
+            className="input-professional"
             value={inputs.annualReturn}
             onChange={(e) => handleInputChange('annualReturn', e.target.value)}
             placeholder="7"
@@ -133,30 +133,30 @@ const FireCalculator = () => {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="mt-6 pt-4 border-t border-violet-500/20"
+              className="mt-6 pt-4 border-t border-slate-700/50"
             >
               <div className="text-center">
                 <p className="text-slate-400 text-sm mb-1">Years to FIRE</p>
                 <motion.p
                   key={result.yearsToFIRE}
-                  initial={{ scale: 1.2, opacity: 0 }}
+                  initial={{ scale: 1.1, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  className="result-cyber"
+                  className="text-3xl font-bold text-primary-400"
                 >
                   {isCalculating ? '...' : `${result.yearsToFIRE} years`}
                 </motion.p>
               </div>
               
               <div className="mt-4 grid grid-cols-2 gap-4 text-center">
-                <div className="p-3 rounded-lg bg-slate-900/50">
+                <div className="p-3 rounded-md bg-slate-800/50">
                   <p className="text-xs text-slate-500 mb-1">FIRE Target</p>
-                  <p className="text-sm font-mono text-cyan-400">
+                  <p className="text-sm font-mono text-teal-400">
                     {formatCurrency(result.targetWealth)}
                   </p>
                 </div>
-                <div className="p-3 rounded-lg bg-slate-900/50">
+                <div className="p-3 rounded-md bg-slate-800/50">
                   <p className="text-xs text-slate-500 mb-1">Projected Value</p>
-                  <p className="text-sm font-mono text-violet-400">
+                  <p className="text-sm font-mono text-emerald-400">
                     {formatCurrency(result.projectedWealth)}
                   </p>
                 </div>

@@ -1,0 +1,352 @@
+[
+  {
+    "id": "nordea-001",
+    "date": "2024-09-25",
+    "merchant": "Lön från Arbetsgivare",
+    "amount": 45000,
+    "category": "Salary"
+  },
+  {
+    "id": "nordea-002",
+    "date": "2024-09-26",
+    "merchant": "Autogiro: Hyresbostäder",
+    "amount": -8500,
+    "category": "Housing"
+  },
+  {
+    "id": "nordea-003",
+    "date": "2024-09-27",
+    "merchant": "ICA Supermarket",
+    "amount": -345,
+    "category": "Groceries"
+  },
+  {
+    "id": "nordea-004",
+    "date": "2024-09-28",
+    "merchant": "SL Appen",
+    "amount": -970,
+    "category": "Transportation"
+  },
+  {
+    "id": "nordea-005",
+    "date": "2024-09-28",
+    "merchant": "Pressbyrån",
+    "amount": -45,
+    "category": "Fika"
+  },
+  {
+    "id": "nordea-006",
+    "date": "2024-09-29",
+    "merchant": "Spotify Ab",
+    "amount": -119,
+    "category": "Subscriptions"
+  },
+  {
+    "id": "nordea-007",
+    "date": "2024-09-30",
+    "merchant": "Hemköp",
+    "amount": -523,
+    "category": "Groceries"
+  },
+  {
+    "id": "nordea-008",
+    "date": "2024-10-01",
+    "merchant": "Netflix AB",
+    "amount": -149,
+    "category": "Subscriptions"
+  },
+  {
+    "id": "nordea-009",
+    "date": "2024-10-02",
+    "merchant": "Systembolaget",
+    "amount": -289,
+    "category": "Alcohol"
+  },
+  {
+    "id": "nordea-010",
+    "date": "2024-10-03",
+    "merchant": "Pressbyrån",
+    "amount": -52,
+    "category": "Fika"
+  },
+  {
+    "id": "nordea-011",
+    "date": "2024-10-04",
+    "merchant": "Coop Konsum",
+    "amount": -412,
+    "category": "Groceries"
+  },
+  {
+    "id": "nordea-012",
+    "date": "2024-10-05",
+    "merchant": "H&M Online",
+    "amount": -599,
+    "category": "Shopping"
+  },
+  {
+    "id": "nordea-013",
+    "date": "2024-10-06",
+    "merchant": "Espresso House",
+    "amount": -55,
+    "category": "Fika"
+  },
+  {
+    "id": "nordea-014",
+    "date": "2024-10-07",
+    "merchant": "Apoteket Hjärtat",
+    "amount": -189,
+    "category": "Health"
+  },
+  {
+    "id": "nordea-015",
+    "date": "2024-10-08",
+    "merchant": "ICA Supermarket",
+    "amount": -678,
+    "category": "Groceries"
+  },
+  {
+    "id": "nordea-016",
+    "date": "2024-10-09",
+    "merchant": "MAX Hamburgare",
+    "amount": -119,
+    "category": "Dining"
+  },
+  {
+    "id": "nordea-017",
+    "date": "2024-10-10",
+    "merchant": "Autogiro: Telia Mobil",
+    "amount": -449,
+    "category": "Subscriptions"
+  },
+  {
+    "id": "nordea-018",
+    "date": "2024-10-11",
+    "merchant": "Wayne's Coffee",
+    "amount": -48,
+    "category": "Fika"
+  },
+  {
+    "id": "nordea-019",
+    "date": "2024-10-12",
+    "merchant": "Willys",
+    "amount": -389,
+    "category": "Groceries"
+  },
+  {
+    "id": "nordea-020",
+    "date": "2024-10-13",
+    "merchant": "Norwegian Air",
+    "amount": -2850,
+    "category": "Travel"
+  },
+  {
+    "id": "nordea-021",
+    "date": "2024-10-14",
+    "merchant": "Pressbyrån",
+    "amount": -38,
+    "category": "Fika"
+  },
+  {
+    "id": "nordea-022",
+    "date": "2024-10-15",
+    "merchant": "ICA Supermarket",
+    "amount": -445,
+    "category": "Groceries"
+  },
+  {
+    "id": "nordea-023",
+    "date": "2024-10-16",
+    "merchant": "Bio Capitol",
+    "amount": -165,
+    "category": "Entertainment"
+  },
+  {
+    "id": "nordea-024",
+    "date": "2024-10-17",
+    "merchant": "Konditori Sturekatten",
+    "amount": -58,
+    "category": "Fika"
+  },
+  {
+    "id": "nordea-025",
+    "date": "2024-10-25",
+    "merchant": "Lön från Arbetsgivare",
+    "amount": 45000,
+    "category": "Salary"
+  },
+  {
+    "id": "nordea-026",
+    "date": "2024-10-26",
+    "merchant": "Autogiro: Hyresbostäder",
+    "amount": -8500,
+    "category": "Housing"
+  },
+  {
+    "id": "nordea-027",
+    "date": "2024-10-27",
+    "merchant": "Hemköp",
+    "amount": -612,
+    "category": "Groceries"
+  },
+  {
+    "id": "nordea-028",
+    "date": "2024-10-28",
+    "merchant": "SL Appen",
+    "amount": -970,
+    "category": "Transportation"
+  },
+  {
+    "id": "nordea-029",
+    "date": "2024-10-29",
+    "merchant": "Spotify Ab",
+    "amount": -119,
+    "category": "Subscriptions"
+  },
+  {
+    "id": "nordea-030",
+    "date": "2024-10-30",
+    "merchant": "IKEA Kungens Kurva",
+    "amount": -1245,
+    "category": "Shopping"
+  },
+  {
+    "id": "nordea-031",
+    "date": "2024-10-31",
+    "merchant": "Pressbyrån",
+    "amount": -42,
+    "category": "Fika"
+  },
+  {
+    "id": "nordea-032",
+    "date": "2024-11-01",
+    "merchant": "Netflix AB",
+    "amount": -149,
+    "category": "Subscriptions"
+  },
+  {
+    "id": "nordea-033",
+    "date": "2024-11-02",
+    "merchant": "Coop Konsum",
+    "amount": -534,
+    "category": "Groceries"
+  },
+  {
+    "id": "nordea-034",
+    "date": "2024-11-03",
+    "merchant": "Da Matteo",
+    "amount": -56,
+    "category": "Fika"
+  },
+  {
+    "id": "nordea-035",
+    "date": "2024-11-04",
+    "merchant": "Claes Ohlson",
+    "amount": -349,
+    "category": "Shopping"
+  },
+  {
+    "id": "nordea-036",
+    "date": "2024-11-05",
+    "merchant": "ICA Supermarket",
+    "amount": -512,
+    "category": "Groceries"
+  },
+  {
+    "id": "nordea-037",
+    "date": "2024-11-06",
+    "merchant": "Vapiano Stockholm",
+    "amount": -185,
+    "category": "Dining"
+  },
+  {
+    "id": "nordea-038",
+    "date": "2024-11-07",
+    "merchant": "Espresso House",
+    "amount": -49,
+    "category": "Fika"
+  },
+  {
+    "id": "nordea-039",
+    "date": "2024-11-08",
+    "merchant": "SJ Biljetter",
+    "amount": -695,
+    "category": "Travel"
+  },
+  {
+    "id": "nordea-040",
+    "date": "2024-11-09",
+    "merchant": "Willys",
+    "amount": -423,
+    "category": "Groceries"
+  },
+  {
+    "id": "nordea-041",
+    "date": "2024-11-10",
+    "merchant": "Autogiro: Telia Mobil",
+    "amount": -449,
+    "category": "Subscriptions"
+  },
+  {
+    "id": "nordea-042",
+    "date": "2024-11-11",
+    "merchant": "Akademibokhandeln",
+    "amount": -279,
+    "category": "Shopping"
+  },
+  {
+    "id": "nordea-043",
+    "date": "2024-11-12",
+    "merchant": "Pressbyrån",
+    "amount": -35,
+    "category": "Fika"
+  },
+  {
+    "id": "nordea-044",
+    "date": "2024-11-13",
+    "merchant": "Friskis & Svettis",
+    "amount": -395,
+    "category": "Health"
+  },
+  {
+    "id": "nordea-045",
+    "date": "2024-11-14",
+    "merchant": "Hemköp",
+    "amount": -489,
+    "category": "Groceries"
+  },
+  {
+    "id": "nordea-046",
+    "date": "2024-11-15",
+    "merchant": "Starbucks Odenplan",
+    "amount": -59,
+    "category": "Fika"
+  },
+  {
+    "id": "nordea-047",
+    "date": "2024-11-16",
+    "merchant": "Sushi Yama",
+    "amount": -225,
+    "category": "Dining"
+  },
+  {
+    "id": "nordea-048",
+    "date": "2024-11-17",
+    "merchant": "ICA Supermarket",
+    "amount": -378,
+    "category": "Groceries"
+  },
+  {
+    "id": "nordea-049",
+    "date": "2024-11-18",
+    "merchant": "Wayne's Coffee",
+    "amount": -51,
+    "category": "Fika"
+  },
+  {
+    "id": "nordea-050",
+    "date": "2024-11-25",
+    "merchant": "Lön från Arbetsgivare",
+    "amount": 45000,
+    "category": "Salary"
+  }
+]
